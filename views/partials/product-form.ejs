@@ -1,0 +1,78 @@
+<%
+  const field = (name, label, opts = {}) => ({ name, label, ...opts });
+  const optional = [
+    field('imageUrl', 'Image URL', { placeholder: 'https://…/image.png' }),
+    field('webhookUrl', 'Webhook URL', { placeholder: 'https://api.example.com/hooks/paid' }),
+    field('returnUrl', 'Return URL', { placeholder: 'https://example.com/thanks' }),
+  ];
+  const input = 'w-full mt-1 rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500';
+  const err = (n) => errors[n] ? `<p class="mt-1 text-xs text-rose-400">${errors[n]}</p>` : '';
+  const isEdit = !!locals.editing;
+%>
+<form id="product-form" method="post" action="<%= isEdit ? `/dashboard/products/${editing}` : '/dashboard/products' %>" class="space-y-5 rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur">
+  <div class="flex items-center justify-between">
+    <h2 class="text-xl font-bold"><%= isEdit ? 'Edit product' : 'New product' %></h2>
+    <% if (isEdit) { %>
+      <a href="/dashboard" class="text-xs text-slate-400 hover:text-white">Cancel edit</a>
+    <% } %>
+  </div>
+
+  <div class="grid sm:grid-cols-4 gap-4">
+    <label class="sm:col-span-2 block text-sm">Name
+      <input id="product-name" name="name" required value="<%= values.name || '' %>" class="<%= input %>">
+      <%- err('name') %>
+    </label>
+    <label class="block text-sm">Price
+      <input id="product-price" name="price" type="number" step="any" min="0.00000001" required value="<%= values.price || '' %>" class="<%= input %>">
+      <%- err('price') %>
+    </label>
+    <label class="block text-sm">Currency
+      <% const selectedCurrency = (values.currency || 'USD').toUpperCase(); %>
+      <select id="product-currency" name="currency" class="<%= input %> bg-slate-900">
+        <optgroup label="Cryptocurrencies">
+          <% currencies.filter(c => c.type === 'crypto').forEach(c => { %>
+            <option value="<%= c.code %>" <%= c.code === selectedCurrency ? 'selected' : '' %>><%= c.code %> — <%= c.name %></option>
+          <% }) %>
+        </optgroup>
+        <optgroup label="Fiat Currencies">
+          <% currencies.filter(c => c.type !== 'crypto').forEach(c => { %>
+            <option value="<%= c.code %>" <%= c.code === selectedCurrency ? 'selected' : '' %>><%= c.code %> — <%= c.name %></option>
+          <% }) %>
+        </optgroup>
+      </select>
+      <%- err('currency') %>
+    </label>
+  </div>
+
+  <div>
+    <div class="flex items-center justify-between text-sm">
+      <span>Description <span class="text-slate-500">(markdown)</span></span>
+      <button type="button" id="toggle-preview" class="text-indigo-400 hover:text-indigo-300">Preview</button>
+    </div>
+    <textarea id="product-description" name="description" rows="6" required class="<%= input %> font-mono text-sm"
+      placeholder="# Title&#10;**bold**, *italic*, `code`, [link](https://…)&#10;- list item"><%= values.description || '' %></textarea>
+    <div id="description-preview" class="hidden mt-1 min-h-36 rounded-xl border border-white/10 bg-slate-900/60 p-4 space-y-2"></div>
+    <%- err('description') %>
+  </div>
+
+  <details class="group" <%= Object.keys(errors).some(k => k.endsWith('Url')) ? 'open' : '' %>>
+    <summary class="cursor-pointer text-sm text-slate-400 hover:text-white">Optional settings</summary>
+    <div class="mt-4 space-y-4">
+      <% optional.forEach(f => { %>
+        <label class="block text-sm"><%= f.label %>
+          <input id="product-<%= f.name %>" name="<%= f.name %>" type="url" placeholder="<%= f.placeholder %>" value="<%= values[f.name] || '' %>" class="<%= input %>">
+          <%- err(f.name) %>
+        </label>
+      <% }) %>
+    </div>
+  </details>
+
+  <%- include('metadata-fields') %>
+
+  <%- include('payments-fields', { input, err }) %>
+
+  <button id="create-product" class="w-full rounded-xl bg-gradient-to-r from-indigo-500 to-fuchsia-500 py-3 font-semibold hover:opacity-90 transition">
+    <%= isEdit ? 'Save changes' : 'Create product' %>
+  </button>
+</form>
+<script src="/js/product-form.js" defer></script>

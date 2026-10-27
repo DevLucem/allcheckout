@@ -1,0 +1,14 @@
+<% const btn = 'rounded-xl bg-indigo-500 hover:bg-indigo-400 transition px-4 py-2 text-sm font-semibold'; %>
+<header class="border-b border-white/10 backdrop-blur bg-slate-950/60 sticky top-0 z-10">
+  <nav class="max-w-5xl mx-auto flex items-center justify-between px-6 py-4">
+    <a href="/" id="nav-home" class="font-extrabold text-lg bg-gradient-to-r from-indigo-400 to-fuchsia-400 bg-clip-text text-transparent">AllCheckout</a>
+    <% if (locals.page === 'dashboard') { %>
+      <% if (products.length) { %>
+        <button type="button" id="toggle-form" aria-controls="form-wrap" aria-expanded="<%= showForm %>" class="<%= btn %>"><%= showForm ? 'Close' : '+ Add product' %></button>
+      <% } %>
+    <% } else if (locals.page === 'home') { %>
+      <a href="/dashboard" id="nav-link-dashboard" class="<%= btn %>">Dashboard</a>
+    <% } %>
+  </nav>
+</header>
+<main class="max-w-5xl mx-auto px-6 py-16">

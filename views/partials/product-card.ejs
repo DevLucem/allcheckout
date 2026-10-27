@@ -1,0 +1,22 @@
+<li class="rounded-2xl border border-white/10 bg-white/5 p-4 flex gap-4 <%= product.id === created ? 'ring-2 ring-emerald-400' : '' %>">
+  <% if (product.imageUrl) { %>
+    <img src="<%= product.imageUrl %>" alt="" class="w-16 h-16 rounded-xl object-cover bg-white/10">
+  <% } %>
+  <div class="min-w-0 flex-1">
+    <div class="flex justify-between gap-2">
+      <h3 class="font-semibold truncate"><%= product.name %></h3>
+      <span class="text-indigo-300 font-semibold"><%= formatMoney(product.price, product.currency) %></span>
+    </div>
+    <div class="mt-1 flex flex-wrap gap-1">
+      <% const enabled = Object.keys(product.payments || {}); %>
+      <% if (!enabled.length) { %><span class="text-xs text-amber-400">No payment methods</span><% } %>
+      <% enabled.forEach(m => { %><span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300"><%= m %></span><% }) %>
+    </div>
+    <div class="mt-2 flex gap-2">
+      <input readonly value="/checkout/<%= product.id %>" class="share-url flex-1 min-w-0 text-xs rounded-lg bg-slate-900/60 border border-white/10 px-2 py-1 text-slate-400">
+      <button type="button" class="copy-url text-xs px-2 rounded-lg bg-white/10 hover:bg-white/20">Copy</button>
+      <a href="/dashboard?edit=<%= product.id %>" class="text-xs px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20">Edit</a>
+      <a href="/checkout/<%= product.id %>" target="_blank" class="text-xs px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20">Open</a>
+    </div>
+  </div>
+</li>

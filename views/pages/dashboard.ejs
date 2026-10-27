@@ -1,0 +1,17 @@
+<% const showForm = !products.length || Object.keys(errors).length > 0 || !!locals.editing; %>
+<%- include('../partials/head') %>
+<%- include('../partials/nav', { page: 'dashboard', showForm }) %>
+<h1 class="text-3xl font-extrabold">Dashboard</h1>
+<p class="mt-2 text-slate-400">Create a product and share its checkout link.</p>
+
+<div id="form-wrap" class="mt-8 max-w-2xl <%= showForm ? '' : 'hidden' %>"><%- include('../partials/product-form') %></div>
+
+<% if (products.length) { %>
+<section class="mt-10">
+  <h2 class="text-xl font-bold mb-4">Products <span class="text-slate-500 text-base">(<%= products.length %>)</span></h2>
+  <ul id="product-list" class="grid sm:grid-cols-2 gap-3">
+    <% products.forEach(product => { %><%- include('../partials/product-card', { product, created: locals.created }) %><% }) %>
+  </ul>
+</section>
+<% } %>
+<%- include('../partials/foot') %>

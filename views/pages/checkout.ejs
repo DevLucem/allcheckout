@@ -1,0 +1,73 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%
+  const metaFields = Array.isArray(product.metadata) ? product.metadata : DefaultMeta;
+  const enabledMethods = (methods || []).filter(m => product.payments && product.payments[m.id]);
+  const subPlans = enabledMethods.flatMap(m =>
+    (product.payments[m.id]?.plans || []).map(p => ({
+      method: m,
+      plan: typeof p === 'string' ? { name: p, id: p, duration: '', price: product.price } : p,
+    }))
+  );
+  const input = 'w-full mt-1 rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500';
+%>
+<div class="max-w-xl mx-auto rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+  <% if (product.imageUrl) { %><img src="<%= product.imageUrl %>" alt="<%= product.name %>" class="w-full h-56 object-cover"><% } %>
+  <div class="p-6">
+    <div class="flex justify-between items-start gap-4">
+      <h1 class="text-3xl font-extrabold"><%= product.name %></h1>
+      <span class="text-2xl font-bold text-indigo-300"><%= formatMoney(product.price, product.currency) %></span>
+    </div>
+    <div class="mt-4 space-y-2 text-slate-300"><%- md(product.description) %></div>
+
+    <% if (!enabledMethods.length) { %>
+      <p class="mt-6 text-sm text-amber-400">No payment methods enabled for this product yet.</p>
+    <% } else { %>
+      <form id="checkout-form" method="post" action="/payments/<%= enabledMethods[0].id %>" class="mt-6 space-y-4 border-t border-white/10 pt-6">
+        <input type="hidden" name="productId" value="<%= product.id %>">
+        <input type="hidden" name="plan" id="selected-plan" value="">
+
+        <% metaFields.forEach(f => { const isEmail = f.name.toLowerCase() === 'email'; %>
+          <label class="block text-sm capitalize">
+            <%= f.name %>
+            <% if (!f.required) { %><span class="text-xs text-slate-500 lowercase">(optional)</span><% } %>
+            <input name="metadata[<%= f.name %>]" type="<%= isEmail ? 'email' : 'text' %>" <%= f.required ? 'required' : '' %> class="<%= input %>">
+          </label>
+        <% }) %>
+
+        <p id="checkout-error" class="hidden text-xs text-rose-400"></p>
+
+        <div class="space-y-2 pt-2">
+          <% enabledMethods.forEach(m => { %>
+            <button type="submit" data-method="<%= m.id %>" formaction="/payments/<%= m.id %>"
+              class="pay-btn w-full rounded-xl bg-gradient-to-r from-indigo-500 to-fuchsia-500 py-3 font-semibold hover:opacity-90 transition">
+              Pay <%= formatMoney(product.price, product.currency) %> with <%= m.label %>
+            </button>
+          <% }) %>
+        </div>
+
+        <% if (subPlans.length) { %>
+          <div class="flex items-center gap-3 py-1">
+            <div class="h-px flex-1 bg-white/10"></div>
+            <span class="text-xs uppercase tracking-wider text-slate-500">or</span>
+            <div class="h-px flex-1 bg-white/10"></div>
+          </div>
+
+          <div class="space-y-2">
+            <% subPlans.forEach(({ method: m, plan }) => { %>
+              <button type="submit" data-method="<%= m.id %>" data-plan="<%= plan.id %>" formaction="/payments/<%= m.id %>"
+                class="pay-btn w-full rounded-xl border border-indigo-400/30 bg-indigo-500/10 hover:bg-indigo-500/20 py-3 px-4 font-semibold text-indigo-200 transition flex items-center justify-between">
+                <span>Subscribe · <%= plan.name %></span>
+                <span class="text-sm text-indigo-300">
+                  <%= formatMoney(plan.price || product.price, product.currency) %><%= plan.duration ? ` / ${plan.duration}` : '' %>
+                </span>
+              </button>
+            <% }) %>
+          </div>
+        <% } %>
+      </form>
+      <script src="/js/checkout.js" defer></script>
+    <% } %>
+  </div>
+</div>
+<%- include('../partials/foot') %>

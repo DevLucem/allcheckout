@@ -1,0 +1,26 @@
+<%
+  const fields = Array.isArray(values.metadata) ? values.metadata : [
+    { name: 'name', required: false },
+    { name: 'email', required: true },
+  ];
+%>
+<details id="metadata-section" class="group">
+  <summary class="cursor-pointer text-sm text-slate-400 hover:text-white">Metadata</summary>
+  <div class="mt-4 space-y-3">
+    <p class="text-xs text-slate-400">Custom customer fields to collect at checkout. Click the badge to toggle required or optional.</p>
+    <div id="metadata-list" class="space-y-2">
+      <% fields.forEach((f) => { const req = !!f.required; %>
+        <div class="metadata-row flex items-center gap-2">
+          <input name="metadata[name][]" value="<%= f.name %>" placeholder="Field name (e.g. phone)"
+            class="flex-1 rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <input type="hidden" name="metadata[required][]" value="<%= req ? '1' : '0' %>" class="metadata-req-input">
+          <button type="button" class="metadata-req-toggle text-xs px-3 py-2 rounded-xl border transition font-medium <%= req ? 'bg-indigo-500/20 border-indigo-400/40 text-indigo-300' : 'bg-white/5 border-white/10 text-slate-400' %>">
+            <%= req ? 'Required' : 'Optional' %>
+          </button>
+          <button type="button" class="metadata-remove text-slate-400 hover:text-rose-400 px-2 py-1 text-lg leading-none" title="Remove field">&times;</button>
+        </div>
+      <% }) %>
+    </div>
+    <button type="button" id="add-metadata-field" class="text-xs px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 transition">+ Add field</button>
+  </div>
+</details>
