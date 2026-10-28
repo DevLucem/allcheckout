@@ -28,18 +28,18 @@
     </label>
     <label class="block text-sm">Currency
       <% const selectedCurrency = (values.currency || 'USD').toUpperCase(); %>
-      <select id="product-currency" name="currency" class="<%= input %> bg-slate-900">
-        <optgroup label="Cryptocurrencies">
-          <% currencies.filter(c => c.type === 'crypto').forEach(c => { %>
-            <option value="<%= c.code %>" <%= c.code === selectedCurrency ? 'selected' : '' %>><%= c.code %> — <%= c.name %></option>
-          <% }) %>
-        </optgroup>
-        <optgroup label="Fiat Currencies">
-          <% currencies.filter(c => c.type !== 'crypto').forEach(c => { %>
-            <option value="<%= c.code %>" <%= c.code === selectedCurrency ? 'selected' : '' %>><%= c.code %> — <%= c.name %></option>
-          <% }) %>
-        </optgroup>
-      </select>
+          <select id="product-currency" name="currency" class="<%= input %> bg-slate-900 text-white" style="color-scheme: dark;">
+            <optgroup label="Cryptocurrencies" style="background: #0f172a; color: #ffffff;">
+              <% currencies.filter(c => c.type === 'crypto').forEach(c => { %>
+                <option value="<%= c.code %>" <%= c.code === selectedCurrency ? 'selected' : '' %>><%= c.code %> — <%= c.name %></option>
+              <% }) %>
+            </optgroup>
+            <optgroup label="Fiat Currencies" style="background: #0f172a; color: #ffffff;">
+              <% currencies.filter(c => c.type !== 'crypto').forEach(c => { %>
+                <option value="<%= c.code %>" <%= c.code === selectedCurrency ? 'selected' : '' %>><%= c.code %> — <%= c.name %></option>
+              <% }) %>
+            </optgroup>
+          </select>
       <%- err('currency') %>
     </label>
   </div>
