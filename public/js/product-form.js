@@ -41,18 +41,29 @@ document.querySelectorAll('.payment-toggle').forEach((t) =>
   })
 );
 
-// Fetch and render subscription plans when secret key is set
+// Collect all config fields for a payment method card
+function getMethodConfig(methodCard) {
+  const config = {};
+  let ready = true;
+  methodCard.querySelectorAll('.payment-config-input').forEach((input) => {
+    const val = input.value.trim();
+    config[input.dataset.field] = val;
+    if (input.dataset.required === 'true' && !val) ready = false;
+  });
+  return { config, ready };
+}
+
+// Fetch and render subscription plans when all required credentials for a method are set
 async function loadMethodPlans(methodCard) {
   const method = methodCard.dataset.method;
-  const secretInput = methodCard.querySelector(`#pay-${method}-secret`);
   const wrap = methodCard.querySelector('.plans-wrap');
-  if (!secretInput || !wrap) return;
+  if (!wrap) return;
 
-  const secret = secretInput.value.trim();
+  const { config, ready } = getMethodConfig(methodCard);
   const statusEl = wrap.querySelector('.plans-status');
   const listEl = wrap.querySelector('.plans-list');
-  if (!secret) {
-    statusEl.textContent = 'Enter your secret key first.';
+  if (!ready) {
+    statusEl.textContent = 'Enter all required credentials above first.';
     statusEl.className = 'plans-status mt-1 text-xs text-rose-400';
     return;
   }
@@ -72,7 +83,7 @@ async function loadMethodPlans(methodCard) {
     const res = await fetch(`/payments/${method}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'plans', secret }),
+      body: JSON.stringify({ action: 'plans', ...config }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Could not fetch plans.');
@@ -126,15 +137,16 @@ async function loadMethodPlans(methodCard) {
 }
 
 document.querySelectorAll('.payment-method').forEach((card) => {
-  const method = card.dataset.method;
-  const secretInput = card.querySelector(`#pay-${method}-secret`);
+  const inputs = card.querySelectorAll('.payment-config-input');
   const fetchBtn = card.querySelector('.fetch-plans-btn');
   fetchBtn?.addEventListener('click', () => loadMethodPlans(card));
-  secretInput?.addEventListener('change', () => {
-    if (secretInput.value.trim()) loadMethodPlans(card);
-  });
-  // Auto-load plans when editing a product that already has a secret key
-  if (secretInput?.value.trim()) loadMethodPlans(card);
+  inputs.forEach((input) =>
+    input.addEventListener('change', () => {
+      if (getMethodConfig(card).ready) loadMethodPlans(card);
+    })
+  );
+  // Auto-load plans when editing a product that already has credentials configured
+  if (inputs.length && getMethodConfig(card).ready) loadMethodPlans(card);
 });
 
 // Metadata fields: toggle Required/Optional, remove row, and add new custom row

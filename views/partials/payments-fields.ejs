@@ -4,6 +4,7 @@
 %>
 <details id="payments-section" class="group" <%= hasErr ? 'open' : '' %>>
   <summary class="cursor-pointer text-sm text-slate-400 hover:text-white">Payments</summary>
+  <%- err('payments') %>
   <div class="mt-4 space-y-3">
     <% methods.forEach(m => {
       const v = pv[m.id] || {};
@@ -14,17 +15,24 @@
     %>
       <div class="payment-method rounded-xl border border-white/10 bg-slate-900/40 p-4" data-method="<%= m.id %>">
         <label class="flex items-center justify-between cursor-pointer">
-          <span class="font-semibold"><%= m.label %></span>
+          <div>
+            <span class="font-semibold"><%= m.label %></span>
+            <% if (Array.isArray(m.currencies) && m.currencies.length) { %>
+              <span class="ml-2 text-xs text-slate-500">(<%= m.currencies.join(', ') %>)</span>
+            <% } %>
+          </div>
           <input type="checkbox" id="pay-<%= m.id %>-enabled" name="payments[<%= m.id %>][enabled]" value="1" <%= on ? 'checked' : '' %>
             class="payment-toggle peer sr-only">
           <span class="w-10 h-6 rounded-full bg-white/10 peer-checked:bg-indigo-500 relative transition after:absolute after:top-1 after:left-1 after:w-4 after:h-4 after:rounded-full after:bg-white after:transition peer-checked:after:translate-x-4"></span>
         </label>
+        <%- err(`payments.${m.id}`) %>
         <div class="payment-fields mt-3 space-y-3 <%= on ? '' : 'hidden' %>">
           <% m.fields.forEach(f => { %>
             <label class="block text-sm"><%= f.label %>
               <input id="pay-<%= m.id %>-<%= f.name %>" name="payments[<%= m.id %>][<%= f.name %>]" type="<%= f.type || 'text' %>"
+                data-field="<%= f.name %>" data-required="<%= !!f.required %>"
                 placeholder="<%= f.placeholder || '' %>" autocomplete="off" value="<%= v[f.name] || '' %>"
-                data-required="<%= !!f.required %>" <%= on && f.required ? 'required' : '' %> class="<%= input %>">
+                <%= on && f.required ? 'required' : '' %> class="payment-config-input <%= input %>">
               <%- err(`payments.${m.id}.${f.name}`) %>
             </label>
           <% }) %>
@@ -35,7 +43,7 @@
                 <span class="text-xs text-slate-400">Subscription plans <span class="text-slate-500">(optional)</span></span>
                 <button type="button" class="fetch-plans-btn text-xs text-indigo-400 hover:text-indigo-300">Load plans</button>
               </div>
-              <p class="plans-status mt-1 text-xs text-slate-500">Enter your secret key to load plans from <%= m.label %>.</p>
+              <p class="plans-status mt-1 text-xs text-slate-500">Enter your credentials above to load plans from <%= m.label %>.</p>
               <div class="plans-list mt-2 space-y-1.5">
                 <% savedPlans.forEach(plan => { %>
                   <label class="flex items-center justify-between gap-2 text-xs text-slate-200 bg-white/5 rounded-lg px-3 py-2 cursor-pointer">

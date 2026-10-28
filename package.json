@@ -1,13 +1,28 @@
 {
   "name": "allcheckout",
   "version": "0.1.0",
-  "private": true,
-  "main": "server.js",
+  "description": "Pluggable multi-provider payment checkout SDK and dashboard",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "payments/"
+  ],
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js"
   },
-  "dependencies": {
+  "keywords": [
+    "payments",
+    "checkout",
+    "paystack",
+    "nowpayments",
+    "crypto"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
     "ejs": "^3.1.10",
     "express": "^4.21.0"
   }
