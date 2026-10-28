@@ -1,72 +1,92 @@
 # AllCheckout
 
-Create products, configure payment providers and custom customer fields, and share a single checkout link — or use AllCheckout directly as a Node.js payment library.
+A zero-dependency, pluggable multi-provider payment checkout SDK for Node.js — plus a ready-to-run dashboard and hosted checkout server.
 
-## Features
-
-- **Product Management (`/dashboard`)**: Create and edit products with name, price, currency (162 ISO fiat currencies + 20 cryptocurrencies), and live-preview custom Markdown descriptions.
-- **Optional Product Settings**: Attach a product image URL, webhook URL, and post-purchase return URL.
-- **Custom Customer Metadata**: Collect customer details at checkout (`name` optional and `email` required by default, with one-click Required/Optional toggles and custom fields).
-- **Pluggable Payment Providers (`/payments/:method`)**:
-  - **Paystack** (`payments/paystack.js`): One-time charges (`/transaction/initialize`), subscription plans (`/plan`), and payment verification (`/transaction/verify/:reference`).
-  - **NOWPayments** (`payments/nowpayments.js`): Crypto & fiat invoice creation (`/v1/invoice`).
-  - Adding a new provider requires only adding a single `<method>.js` file in `payments/`.
-
-## Getting Started (Web App)
-
-```bash
-npm install
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) and visit `/dashboard` to create your first product.
-
-## Using as a Library
+## Installation
 
 ```bash
 npm install allcheckout
 ```
 
-Every file in `payments/` is automatically exposed as an instantiable class on `allcheckout`:
+## Quick Start (Library Usage)
+
+Instantiate any supported provider on `allcheckout` with your credentials and call `.checkout()`:
 
 ```js
-const allcheckout = require('allcheckout'); // or require('./index')
+const allcheckout = require('allcheckout');
 
-// 1. NOWPayments
-const now = new allcheckout.nowpayments({ secret: process.env.NOWPAYMENTS_KEY });
-const invoice = await now.checkout({
+const payment = new allcheckout.nowpayments({ secret: process.env.NOWPAYMENTS_KEY });
+
+const { url, data } = await payment.checkout({
   amount: 49.99,
   currency: 'USDT',
   name: 'Pro License',
   returnUrl: 'https://example.com/thanks',
   webhookUrl: 'https://example.com/ipn',
 });
-console.log(invoice.url); // Redirect user to hosted invoice
 
-// 2. Paystack (one-time charge, plans, and verification)
+// Redirect the customer to `url`
+```
+
+### Paystack Example (One-Time Charge, Subscriptions & Verification)
+
+```js
+const allcheckout = require('allcheckout');
+
 const paystack = new allcheckout.paystack({ secret: process.env.PAYSTACK_SECRET });
 
-const plans = await paystack.fetchPlans(); // [{ name, id, duration, price }, ...]
+// 1. Fetch subscription plans from Paystack ("/plan")
+const plans = await paystack.fetchPlans();
+// -> [{ name: 'Pro Monthly', id: 'PLN_xxx', duration: 'monthly', price: 25 }, ...]
 
+// 2. Initialize a transaction ("/transaction/initialize")
 const session = await paystack.checkout({
   amount: 25,
   currency: 'USD',
   email: 'buyer@example.com',
-  plan: plans[0]?.id, // optional subscription plan ID
+  plan: plans[0]?.id, // omit for a one-time payment
   metadata: { name: 'Ada Lovelace', company: 'Analytical Engines' },
   returnUrl: 'https://example.com/thanks',
 });
 console.log(session.url);
 
-// Verify a transaction reference
+// 3. Verify a transaction reference
 const verified = await paystack.verify({ reference: 'ref_123' });
+// -> { paid: true, reference: 'ref_123', amount: 25, currency: 'USD', metadata: {...} }
 ```
 
- Attempting to instantiate an unsupported provider (e.g. `new allcheckout.unknown({})`) or passing an unsupported currency throws an explicit error immediately.
+### Library API Reference
+
+| Method / Property | Description |
+| --- | --- |
+| `new allcheckout.<method>(config)` | Creates a provider instance (`paystack`, `nowpayments`, etc.) and validates required credentials. Throws immediately if the method is not supported. |
+| `await payment.checkout(options)` | Initializes a payment session and returns `{ url, data }`. Accepts `amount`, `currency`, `name`, `email`, `plan`, `metadata`, `returnUrl`, and `webhookUrl`. |
+| `await payment.fetchPlans()` | Fetches available subscription plans for providers that support subscriptions (`[{ name, id, duration, price }]`). |
+| `await payment.verify(params)` | Verifies a completed transaction or callback payload. |
+| `allcheckout.methods` | Array of available payment provider IDs (e.g. `['nowpayments', 'paystack']`). |
+| `allcheckout.getCurrencies()` | Returns all 182 supported currencies (162 ISO fiat currencies + 20 cryptocurrencies). |
+| `allcheckout.formatMoney(amount, currency)` | Formats an amount in any supported fiat or crypto currency (e.g. `$25.00`, `0.00125 BTC`). |
+
+---
+
+## Self-Hosted Dashboard & Checkout App
+
+When cloned from the repository, AllCheckout also includes an Express + Tailwind web app where you can create products, configure payment methods and custom customer metadata fields, and share `/checkout/:product` links.
+
+```bash
+git clone <repo-url>
+cd allcheckout
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000/dashboard](http://localhost:3000/dashboard) to create and manage products.
+
+---
 
 ## Contributing a Payment Method
 
-To add a new payment provider (e.g. `stripe`, `paypal`, `flutterwave`), create `payments/<method>.js`. All library class instantiation (`new allcheckout.<method>(config)`), routing (`/payments/<method>`), dashboard form toggles, credential validation, metadata validation, subscription plan selection, and webhook forwarding are handled automatically by `index.js` and `lib/payments.js`.
+To add a new payment provider (e.g. `stripe`, `paypal`, `flutterwave`), create a single file at `payments/<method>.js`. Library class instantiation (`new allcheckout.<method>(config)`), Express routing (`/payments/<method>`), dashboard form toggles, credential validation, metadata validation, and subscription plan selection work automatically.
 
 ```js
 // payments/example.js
@@ -74,25 +94,23 @@ module.exports = {
   label: 'ExamplePay',
   // Optional: restrict supported currencies (or use currencyTypes: ['fiat'] / ['crypto'])
   currencies: ['USD', 'EUR', 'GBP'],
-  // Fields rendered in the dashboard product form & required by `new allcheckout.example(config)`
+  // Fields required by `new allcheckout.example(config)` and rendered in the dashboard form
   fields: [
     { name: 'client_id', label: 'Client ID', type: 'text', required: true },
     { name: 'secret', label: 'Secret key', type: 'password', required: true },
   ],
 
-  // Optional: enables `payment.fetchPlans()` and the "Subscription plans" selector in the dashboard form
+  // Optional: enables `payment.fetchPlans()` and the dashboard plan selector
   async fetchPlans(config) {
-    // Use config.client_id / config.secret to fetch plans from provider API
     return [{ name: 'Pro Monthly', id: 'plan_123', duration: 'monthly', price: 19.99 }];
   },
 
   // Required: initialize checkout and return { url, data }
   async checkout({ product, config, metadata, plan, planId, amount, currency, returnUrl, webhookUrl, callbackUrl }) {
-    // Call provider API and return the hosted checkout redirect URL
     return { url: 'https://checkout.example.com/session_123', data: {} };
   },
 
-  // Optional: verify payment via `payment.verify(params)` or GET/POST /payments/example?action=callback&productId=...
+  // Optional: enables `payment.verify(params)` and callback verification
   async verify({ req, product, config }) {
     return { paid: true, reference: req.query.ref, amount: product?.price, currency: product?.currency };
   },
